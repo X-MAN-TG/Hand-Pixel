@@ -34,145 +34,518 @@
         }
 
         /* ─────────────────── TELEGRAM POPUP ─────────────────── */
-        #tgOverlay {
-            position: fixed; inset: 0; z-index: 9999;
-            background: radial-gradient(ellipse at 50% 40%, rgba(30,15,60,0.98) 0%, rgba(3,4,15,0.99) 100%);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            backdrop-filter: blur(30px);
+        @keyframes shimmerText {
+            0%   { background-position: 0% }
+            100% { background-position: 200% }
         }
-
-        .tg-card {
-            position: relative;
-            background: linear-gradient(135deg, rgba(20,12,40,0.95), rgba(8,10,25,0.95));
-            border: 1px solid rgba(176,96,255,0.35);
-            border-radius: 28px;
-            padding: 52px 48px 44px;
-            max-width: 460px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 0 80px rgba(176,96,255,0.2), 0 0 160px rgba(0,255,204,0.06), inset 0 1px 0 rgba(255,255,255,0.08);
-            animation: cardIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
-        }
-
         @keyframes cardIn {
-            from { opacity:0; transform: scale(0.8) translateY(40px); }
+            from { opacity:0; transform: scale(0.88) translateY(30px); }
             to   { opacity:1; transform: scale(1) translateY(0); }
         }
-
-        .tg-logo {
-            width: 80px; height: 80px;
-            background: linear-gradient(135deg, #2AABEE, #229ED9);
-            border-radius: 50%;
-            margin: 0 auto 24px;
-            display: flex; align-items:center; justify-content:center;
-            font-size: 38px;
-            box-shadow: 0 0 40px rgba(42,171,238,0.5);
-            animation: pulseLogo 2.5s ease-in-out infinite;
-        }
-
         @keyframes pulseLogo {
-            0%,100% { box-shadow: 0 0 40px rgba(42,171,238,0.5); }
-            50%      { box-shadow: 0 0 70px rgba(42,171,238,0.85), 0 0 100px rgba(42,171,238,0.3); }
+            0%,100% { box-shadow: 0 0 35px rgba(42,171,238,0.55), 0 0 70px rgba(42,171,238,0.15); }
+            50%     { box-shadow: 0 0 65px rgba(42,171,238,0.9),  0 0 120px rgba(42,171,238,0.35); }
+        }
+        @keyframes twinkle {
+            0%,100% { opacity: 0.08; transform: scale(1); }
+            50%     { opacity: 0.75; transform: scale(1.5); }
+        }
+        @keyframes orbitRing {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+        @keyframes orbitRingRev {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(-360deg); }
+        }
+        @keyframes ripplePulse {
+            0%   { transform: scale(0.85); opacity: 0.6; }
+            50%  { transform: scale(1.12); opacity: 0.2; }
+            100% { transform: scale(0.85); opacity: 0.6; }
+        }
+        @keyframes btnRipple {
+            from { transform: scale(0); opacity: 0.5; }
+            to   { transform: scale(4);  opacity: 0; }
+        }
+        @keyframes doneIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0)    scale(1); }
+        }
+        @keyframes floatParticle {
+            0%   { transform: translateY(0)   translateX(0)   scale(1);   opacity: 0.7; }
+            50%  { transform: translateY(-28px) translateX(12px) scale(1.3); opacity: 1; }
+            100% { transform: translateY(0)   translateX(0)   scale(1);   opacity: 0.7; }
         }
 
+        #tgOverlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% 30%, rgba(80,20,140,0.55) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 50% at 20% 80%, rgba(0,200,180,0.18) 0%, transparent 60%),
+                #040210;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Floating ambient orbs */
+        .tg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            pointer-events: none;
+            animation: ripplePulse var(--od) ease-in-out infinite var(--odel);
+        }
+
+        /* Stars */
+        .stars { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+        .star {
+            position: absolute; border-radius: 50%; background: white;
+            animation: twinkle var(--d) ease-in-out infinite var(--del);
+        }
+
+        /* Card */
+        .tg-card {
+            position: relative; z-index: 2;
+            width: min(92vw, 520px);
+            background: linear-gradient(145deg, rgba(22,14,48,0.92) 0%, rgba(8,10,28,0.96) 100%);
+            border: 1px solid rgba(176,96,255,0.28);
+            border-radius: clamp(20px, 4vw, 32px);
+            padding: clamp(32px, 6vw, 60px) clamp(24px, 6vw, 56px) clamp(28px, 5vw, 52px);
+            text-align: center;
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.04) inset,
+                0 30px 80px rgba(0,0,0,0.7),
+                0 0 100px rgba(140,60,255,0.12);
+            animation: cardIn 0.75s cubic-bezier(0.34,1.45,0.64,1) both;
+            backdrop-filter: blur(24px);
+        }
+
+        /* Corner accent lines */
+        .tg-card::before, .tg-card::after {
+            content: ''; position: absolute; border-radius: 3px; pointer-events: none;
+        }
+        .tg-card::before {
+            top: 18px; left: 18px; width: 32px; height: 32px;
+            border-top: 2px solid rgba(176,96,255,0.55);
+            border-left: 2px solid rgba(176,96,255,0.55);
+            border-radius: 6px 0 0 0;
+        }
+        .tg-card::after {
+            bottom: 18px; right: 18px; width: 32px; height: 32px;
+            border-bottom: 2px solid rgba(0,255,204,0.45);
+            border-right:  2px solid rgba(0,255,204,0.45);
+            border-radius: 0 0 6px 0;
+        }
+
+        /* Logo ring system */
+        .tg-logo-wrap {
+            position: relative;
+            width: clamp(90px, 18vw, 120px);
+            height: clamp(90px, 18vw, 120px);
+            margin: 0 auto clamp(20px, 4vw, 32px);
+        }
+        .tg-logo-ring {
+            position: absolute; inset: -10px;
+            border-radius: 50%;
+            border: 1.5px dashed rgba(176,96,255,0.3);
+            animation: orbitRing 8s linear infinite;
+        }
+        .tg-logo-ring2 {
+            position: absolute; inset: -20px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0,255,204,0.2);
+            animation: orbitRingRev 12s linear infinite;
+        }
+        .tg-logo {
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #2AABEE 0%, #1a8fd1 60%, #1478b8 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(32px, 7vw, 52px);
+            animation: pulseLogo 2.8s ease-in-out infinite;
+            position: relative; z-index: 1;
+        }
+
+        /* Floating micro particles around logo */
+        .tg-particle {
+            position: absolute;
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--pc);
+            animation: floatParticle var(--pd) ease-in-out infinite var(--pde);
+        }
+
+        /* Badge */
+        .tg-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(176,96,255,0.12);
+            border: 1px solid rgba(176,96,255,0.3);
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-family: var(--font-mono);
+            font-size: clamp(0.58rem, 1.5vw, 0.68rem);
+            color: rgba(176,96,255,0.85);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: clamp(12px, 2.5vw, 18px);
+        }
+        .tg-badge-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #b060ff;
+            box-shadow: 0 0 8px #b060ff;
+            animation: recBlink 1.4s ease-in-out infinite;
+        }
+
+        /* Title */
         .tg-title {
             font-family: var(--font-main);
-            font-size: 1.45rem;
+            font-size: clamp(1.4rem, 4.5vw, 2.2rem);
             font-weight: 900;
-            letter-spacing: 2px;
-            margin-bottom: 12px;
-            background: linear-gradient(90deg, #b060ff, #00ffcc, #b060ff);
+            letter-spacing: clamp(1px, 0.5vw, 3px);
+            line-height: 1.15;
+            margin-bottom: clamp(10px, 2vw, 16px);
+            background: linear-gradient(100deg, #c080ff 0%, #00ffcc 50%, #c080ff 100%);
             background-size: 200%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: shimmerText 3s linear infinite;
+            animation: shimmerText 3.5s linear infinite;
         }
 
-        @keyframes shimmerText {
-            0% { background-position: 0% }
-            100% { background-position: 200% }
-        }
-
+        /* Subtitle */
         .tg-sub {
             font-family: var(--font-mono);
-            font-size: 0.82rem;
-            color: rgba(255,255,255,0.55);
-            line-height: 1.7;
-            margin-bottom: 36px;
-            letter-spacing: 0.5px;
+            font-size: clamp(0.75rem, 2.2vw, 0.88rem);
+            color: rgba(255,255,255,0.5);
+            line-height: 1.8;
+            margin-bottom: clamp(24px, 5vw, 40px);
+            letter-spacing: 0.3px;
+        }
+        .tg-sub strong { color: #00ffcc; font-weight: 700; }
+
+        /* Divider row */
+        .tg-divider-row {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: clamp(20px, 4vw, 32px);
+        }
+        .tg-divider-line {
+            flex: 1; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(176,96,255,0.35), transparent);
+        }
+        .tg-divider-icon {
+            font-size: 0.8rem; color: rgba(176,96,255,0.5);
         }
 
-        .tg-sub span {
-            color: var(--accent);
-            font-weight: 700;
-        }
+        /* Buttons wrapper */
+        .tg-btns { display: flex; flex-direction: column; gap: clamp(10px, 2.5vw, 14px); }
 
+        /* Join button */
         .tg-btn {
-            display: inline-flex; align-items: center; gap: 10px;
-            padding: 15px 36px;
-            background: linear-gradient(90deg, #2AABEE, #229ED9);
-            border: none; border-radius: 50px;
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%;
+            padding: clamp(14px, 3.5vw, 18px) clamp(20px, 4vw, 32px);
+            background: linear-gradient(90deg, #2AABEE 0%, #1a8fd1 50%, #2AABEE 100%);
+            background-size: 200%;
+            border: none; border-radius: 16px;
             color: #fff;
             font-family: var(--font-main);
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.95rem);
             font-weight: 700;
-            letter-spacing: 1.5px;
+            letter-spacing: clamp(1px, 0.4vw, 2px);
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 30px rgba(42,171,238,0.4);
+            transition: all 0.35s ease;
+            box-shadow: 0 6px 30px rgba(42,171,238,0.35), 0 2px 8px rgba(0,0,0,0.4);
             text-decoration: none;
         }
-
-        .tg-btn:hover { transform: scale(1.06); box-shadow: 0 6px 40px rgba(42,171,238,0.65); }
-
-        .tg-btn-done {
-            display: none;
-            padding: 15px 36px;
-            background: linear-gradient(90deg, #00ffcc, #00cc99);
-            border: none; border-radius: 50px;
-            color: #020a10;
-            font-family: var(--font-main);
-            font-size: 0.9rem;
-            font-weight: 900;
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 30px rgba(0,255,204,0.4);
-            margin-top: 12px;
+        .tg-btn:hover {
+            background-position: right center;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(42,171,238,0.55), 0 2px 8px rgba(0,0,0,0.4);
         }
-
-        .tg-btn-done:hover { transform: scale(1.06); box-shadow: 0 6px 40px rgba(0,255,204,0.7); }
-
-        .tg-divider {
-            width: 60px; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent2), transparent);
-            margin: 28px auto 0;
-            border-radius: 2px;
-        }
-
-        .tg-note {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: rgba(255,255,255,0.25);
-            margin-top: 18px;
-            letter-spacing: 0.5px;
-        }
-
-        /* Stars bg for popup */
-        .stars {
-            position: absolute; inset: 0;
-            overflow: hidden; pointer-events: none; z-index: 0;
-        }
-        .star {
+        .tg-btn:active { transform: translateY(0) scale(0.98); }
+        .tg-btn .ripple-el {
             position: absolute;
             border-radius: 50%;
-            background: white;
-            animation: twinkle var(--d) ease-in-out infinite var(--del);
+            background: rgba(255,255,255,0.35);
+            transform: scale(0);
+            animation: btnRipple 0.6s linear forwards;
+            pointer-events: none;
         }
-        @keyframes twinkle {
-            0%,100% { opacity: 0.1; transform: scale(1); }
-            50%      { opacity: 0.8; transform: scale(1.4); }
+        .tg-btn-icon {
+            width: clamp(22px, 5vw, 28px); height: clamp(22px, 5vw, 28px);
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(12px, 2.5vw, 15px);
+            flex-shrink: 0;
+        }
+
+        /* Done button */
+        .tg-btn-done {
+            position: relative; overflow: hidden;
+            display: none;
+            width: 100%;
+            align-items: center; justify-content: center; gap: 10px;
+            padding: clamp(14px, 3.5vw, 18px) clamp(20px, 4vw, 32px);
+            background: linear-gradient(90deg, #00ffcc 0%, #00e0b0 50%, #00ffcc 100%);
+            background-size: 200%;
+            border: none; border-radius: 16px;
+            color: #030d0a;
+            font-family: var(--font-main);
+            font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+            font-weight: 900;
+            letter-spacing: clamp(1px, 0.4vw, 2px);
+            cursor: pointer;
+            transition: all 0.35s ease;
+            box-shadow: 0 6px 30px rgba(0,255,204,0.35), 0 2px 8px rgba(0,0,0,0.4);
+            animation: doneIn 0.55s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        .tg-btn-done.show { display: flex; }
+        .tg-btn-done:hover {
+            background-position: right center;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0,255,204,0.6), 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .tg-btn-done:active { transform: translateY(0) scale(0.98); }
+        .tg-btn-done .ripple-el {
+            position: absolute; border-radius: 50%;
+            background: rgba(0,0,0,0.2);
+            transform: scale(0);
+            animation: btnRipple 0.6s linear forwards;
+            pointer-events: none;
+        }
+
+        /* Footer note */
+        .tg-note {
+            font-family: var(--font-mono);
+            font-size: clamp(0.62rem, 1.5vw, 0.7rem);
+            color: rgba(255,255,255,0.2);
+            margin-top: clamp(14px, 3vw, 20px);
+            letter-spacing: 0.5px;
+        }
+        .tg-note a { color: rgba(176,96,255,0.5); text-decoration: none; }
+
+        /* ─────────────────── GUIDE POPUP ─────────────────── */
+        #guideOverlay {
+            position: fixed; inset: 0; z-index: 8000;
+            background: rgba(3,4,15,0.88);
+            backdrop-filter: blur(20px);
+            display: none;
+            align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        #guideOverlay.show { display: flex; }
+
+        .guide-card {
+            position: relative;
+            width: min(96vw, 600px);
+            max-height: 88vh;
+            overflow-y: auto;
+            background: linear-gradient(145deg, rgba(16,10,38,0.97) 0%, rgba(6,8,22,0.98) 100%);
+            border: 1px solid rgba(0,255,204,0.2);
+            border-radius: clamp(16px, 3vw, 26px);
+            padding: clamp(24px, 5vw, 44px) clamp(20px, 5vw, 44px) clamp(20px, 4vw, 36px);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 30px 80px rgba(0,0,0,0.8);
+            animation: cardIn 0.6s cubic-bezier(0.34,1.45,0.64,1) both;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,255,204,0.2) transparent;
+        }
+        .guide-card::-webkit-scrollbar { width: 4px; }
+        .guide-card::-webkit-scrollbar-track { background: transparent; }
+        .guide-card::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.25); border-radius: 2px; }
+
+        .guide-card::before {
+            content: ''; position: absolute;
+            top: 0; left: 50%; transform: translateX(-50%);
+            width: 60%; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,255,204,0.5), transparent);
+        }
+
+        .guide-close {
+            position: absolute; top: 16px; right: 16px;
+            width: 36px; height: 36px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: rgba(255,255,255,0.5);
+            font-size: 1rem; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .guide-close:hover { background: rgba(255,60,60,0.15); border-color: rgba(255,60,60,0.4); color: #ff6060; }
+
+        .guide-header { text-align: center; margin-bottom: clamp(20px, 4vw, 32px); }
+
+        .guide-badge {
+            display: inline-block;
+            background: rgba(0,255,204,0.08);
+            border: 1px solid rgba(0,255,204,0.25);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: rgba(0,255,204,0.7);
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .guide-title {
+            font-family: var(--font-main);
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #00ffcc, #b060ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .guide-tagline {
+            font-family: var(--font-mono);
+            font-size: clamp(0.68rem, 1.8vw, 0.75rem);
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 1px;
+        }
+
+        /* Alert box */
+        .guide-alert {
+            display: flex; align-items: flex-start; gap: 12px;
+            background: rgba(255,180,0,0.07);
+            border: 1px solid rgba(255,180,0,0.25);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: clamp(18px, 3.5vw, 28px);
+            font-family: var(--font-mono);
+            font-size: clamp(0.7rem, 1.8vw, 0.76rem);
+            color: rgba(255,210,80,0.85);
+            line-height: 1.6;
+        }
+        .guide-alert-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+
+        /* Section */
+        .guide-section { margin-bottom: clamp(16px, 3.5vw, 26px); }
+        .guide-section-title {
+            font-family: var(--font-main);
+            font-size: clamp(0.65rem, 1.8vw, 0.72rem);
+            letter-spacing: 2.5px;
+            color: rgba(0,255,204,0.6);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .guide-section-title::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(90deg, rgba(0,255,204,0.2), transparent);
+        }
+
+        /* Step cards */
+        .guide-steps { display: flex; flex-direction: column; gap: 8px; }
+        .guide-step {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: clamp(10px, 2.5vw, 14px) clamp(12px, 3vw, 16px);
+            transition: all 0.2s ease;
+        }
+        .guide-step:hover {
+            background: rgba(0,255,204,0.04);
+            border-color: rgba(0,255,204,0.12);
+        }
+        .guide-step-num {
+            width: clamp(28px, 5vw, 34px); height: clamp(28px, 5vw, 34px);
+            flex-shrink: 0;
+            background: linear-gradient(135deg, rgba(0,255,204,0.15), rgba(176,96,255,0.15));
+            border: 1px solid rgba(0,255,204,0.2);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-main);
+            font-size: clamp(0.7rem, 1.8vw, 0.8rem);
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .guide-step-content {}
+        .guide-step-label {
+            font-family: var(--font-main);
+            font-size: clamp(0.72rem, 1.9vw, 0.8rem);
+            font-weight: 700;
+            color: rgba(255,255,255,0.88);
+            margin-bottom: 3px;
+            letter-spacing: 0.5px;
+        }
+        .guide-step-desc {
+            font-family: var(--font-mono);
+            font-size: clamp(0.65rem, 1.6vw, 0.7rem);
+            color: rgba(255,255,255,0.42);
+            line-height: 1.6;
+        }
+        .guide-step-desc strong { color: rgba(0,255,204,0.7); }
+
+        /* Gesture grid */
+        .guide-gestures {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+        }
+        .guide-gesture {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: clamp(10px, 2.5vw, 14px);
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .guide-gesture:hover {
+            background: rgba(176,96,255,0.05);
+            border-color: rgba(176,96,255,0.2);
+            transform: translateY(-2px);
+        }
+        .guide-gesture-icon { font-size: clamp(1.4rem, 4vw, 1.9rem); margin-bottom: 8px; display: block; }
+        .guide-gesture-name {
+            font-family: var(--font-main);
+            font-size: clamp(0.62rem, 1.5vw, 0.7rem);
+            font-weight: 700;
+            color: rgba(255,255,255,0.75);
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+        .guide-gesture-desc {
+            font-family: var(--font-mono);
+            font-size: clamp(0.58rem, 1.4vw, 0.63rem);
+            color: rgba(255,255,255,0.35);
+            line-height: 1.5;
+        }
+
+        /* Start button inside guide */
+        .guide-enter-btn {
+            position: relative; overflow: hidden;
+            width: 100%; margin-top: clamp(20px, 4vw, 30px);
+            padding: clamp(14px, 3.5vw, 18px);
+            background: linear-gradient(90deg, #00ffcc 0%, #00b894 50%, #00ffcc 100%);
+            background-size: 200%;
+            border: none; border-radius: 16px;
+            color: #030d0a;
+            font-family: var(--font-main);
+            font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+            font-weight: 900;
+            letter-spacing: clamp(1.5px, 0.5vw, 3px);
+            cursor: pointer;
+            transition: all 0.35s ease;
+            box-shadow: 0 6px 30px rgba(0,255,204,0.3);
+        }
+        .guide-enter-btn:hover {
+            background-position: right center;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0,255,204,0.55);
+        }
+        .guide-enter-btn:active { transform: scale(0.98); }
+        .guide-enter-btn .ripple-el {
+            position: absolute; border-radius: 50%;
+            background: rgba(0,0,0,0.15);
+            transform: scale(0);
+            animation: btnRipple 0.6s linear forwards;
+            pointer-events: none;
         }
 
         /* ─────────────────── START OVERLAY ─────────────────── */
@@ -505,25 +878,189 @@
 
 <!-- ═══════════════ TELEGRAM POPUP ═══════════════ -->
 <div id="tgOverlay">
+    <!-- Ambient orbs -->
+    <div class="tg-orb" style="width:380px;height:380px;top:-80px;left:-100px;background:rgba(120,40,220,0.18);--od:6s;--odel:0s;"></div>
+    <div class="tg-orb" style="width:280px;height:280px;bottom:-60px;right:-80px;background:rgba(0,200,180,0.12);--od:8s;--odel:-3s;"></div>
+    <div class="tg-orb" style="width:200px;height:200px;top:40%;left:10%;background:rgba(60,100,255,0.1);--od:5s;--odel:-1.5s;"></div>
+
     <div class="stars" id="starField"></div>
-    <div class="tg-card" style="position:relative;z-index:1;">
-        <div class="tg-logo">✈️</div>
-        <div class="tg-title">ACCESS REQUIRED</div>
+
+    <div class="tg-card">
+        <!-- Logo ring system -->
+        <div class="tg-logo-wrap">
+            <div class="tg-logo-ring2"></div>
+            <div class="tg-logo-ring"></div>
+            <div class="tg-logo">✈️</div>
+            <!-- Micro particles -->
+            <div class="tg-particle" style="top:0;left:20%;--pc:#00ffcc;--pd:2.8s;--pde:0s;"></div>
+            <div class="tg-particle" style="top:15%;right:5%;--pc:#b060ff;--pd:3.5s;--pde:-1s;"></div>
+            <div class="tg-particle" style="bottom:5%;left:10%;--pc:#2AABEE;--pd:4s;--pde:-2s;"></div>
+            <div class="tg-particle" style="bottom:20%;right:0%;--pc:#ffcc00;--pd:3.2s;--pde:-0.5s;"></div>
+        </div>
+
+        <div class="tg-badge"><div class="tg-badge-dot"></div>Exclusive Access</div>
+        <div class="tg-title">JOIN TO UNLOCK</div>
         <p class="tg-sub">
-            This experience is exclusive to<br>
-            <span>@CipherWrites</span> community members.<br><br>
-            Join the channel to unlock the full<br>
-            Neon Aura AR experience.
+            This AR experience is created by<br>
+            <strong>@CipherWrites</strong> — join the channel to<br>
+            get full access to Neon Aura AR.
         </p>
-        <a href="https://t.me/CipherWrites" target="_blank" class="tg-btn" id="joinBtn" onclick="showDoneBtn()">
-            <span>✈</span> Join CipherWrites
-        </a>
-        <br>
-        <button class="tg-btn-done" id="doneBtn" onclick="dismissTg()">
-            ✓ &nbsp;Done, I've Joined — Enter
-        </button>
-        <div class="tg-divider"></div>
-        <p class="tg-note">You'll be redirected back here after joining</p>
+
+        <div class="tg-divider-row">
+            <div class="tg-divider-line"></div>
+            <div class="tg-divider-icon">⬡</div>
+            <div class="tg-divider-line"></div>
+        </div>
+
+        <div class="tg-btns">
+            <a href="https://t.me/CipherWrites" target="_blank" class="tg-btn" id="joinBtn">
+                <span class="tg-btn-icon">✈</span>
+                Join CipherWrites Channel
+            </a>
+            <button class="tg-btn-done" id="doneBtn">
+                <span class="tg-btn-icon">✓</span>
+                Done — I've Joined, Enter Now
+            </button>
+        </div>
+
+        <p class="tg-note">Opens Telegram → Join → come back and tap Done</p>
+    </div>
+</div>
+
+<!-- ═══════════════ GUIDE POPUP ═══════════════ -->
+<div id="guideOverlay">
+    <div class="guide-card">
+        <button class="guide-close" onclick="closeGuide()">✕</button>
+
+        <div class="guide-header">
+            <div class="guide-badge">How To Use</div>
+            <div class="guide-title">NEON AURA AR</div>
+            <div class="guide-tagline">Hand tracking · Air drawing · Lightning arcs</div>
+        </div>
+
+        <div class="guide-alert">
+            <span class="guide-alert-icon">📸</span>
+            <span><strong style="color:rgba(255,210,80,0.95)">Camera access is required.</strong> When prompted by your browser, tap <em>Allow</em> to enable your front camera. Without it, hand tracking will not work.</span>
+        </div>
+
+        <div class="guide-section">
+            <div class="guide-section-title">Getting Started</div>
+            <div class="guide-steps">
+                <div class="guide-step">
+                    <div class="guide-step-num">1</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Allow Camera</div>
+                        <div class="guide-step-desc">Tap <strong>Allow</strong> when browser asks for camera permission. Use a well-lit room facing your camera.</div>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">2</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Raise Your Hands</div>
+                        <div class="guide-step-desc">Hold one or both hands <strong>open, facing the camera</strong> at arm's length. Keep fingers spread for best tracking.</div>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">3</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Watch the Magic</div>
+                        <div class="guide-step-desc">Neon arcs and skeleton lines appear instantly. Bring <strong>both hands</strong> close to each other for lightning effects.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <div class="guide-section-title">Gestures</div>
+            <div class="guide-gestures">
+                <div class="guide-gesture">
+                    <span class="guide-gesture-icon">🤌</span>
+                    <div class="guide-gesture-name">PINCH</div>
+                    <div class="guide-gesture-desc">Bring thumb + index finger together → shockwave burst + zap sound</div>
+                </div>
+                <div class="guide-gesture">
+                    <span class="guide-gesture-icon">🖐️</span>
+                    <div class="guide-gesture-name">OPEN HAND</div>
+                    <div class="guide-gesture-desc">Spread all fingers wide → shows spread % in HUD</div>
+                </div>
+                <div class="guide-gesture">
+                    <span class="guide-gesture-icon">✊</span>
+                    <div class="guide-gesture-name">FIST</div>
+                    <div class="guide-gesture-desc">Close fingers together → detected as Fist mode</div>
+                </div>
+                <div class="guide-gesture">
+                    <span class="guide-gesture-icon">🙌</span>
+                    <div class="guide-gesture-name">BOTH PALMS</div>
+                    <div class="guide-gesture-desc">Use two hands → lightning arcs + mandala pattern between fingertips</div>
+                </div>
+                <div class="guide-gesture">
+                    <span class="guide-gesture-icon">✏️</span>
+                    <div class="guide-gesture-name">AIR DRAW</div>
+                    <div class="guide-gesture-desc">Switch to Draw mode → pinch to paint glowing trails in the air</div>
+                </div>
+                <div class="guide-gesture">
+                    <span class="guide-gesture-icon">⚡</span>
+                    <div class="guide-gesture-name">CLOSE HANDS</div>
+                    <div class="guide-gesture-desc">Bring index fingers of both hands near each other → electric sparks fire</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <div class="guide-section-title">Toolbar (Right Side)</div>
+            <div class="guide-steps">
+                <div class="guide-step">
+                    <div class="guide-step-num">⚡</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Arc Mode</div>
+                        <div class="guide-step-desc">Default mode — shows lightning arcs and neon skeleton on your hands.</div>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">✏️</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Air Draw Mode</div>
+                        <div class="guide-step-desc"><strong>Pinch</strong> your index finger and thumb together to draw glowing strokes in mid-air. Release to stop.</div>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">📷</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Screenshot</div>
+                        <div class="guide-step-desc">Saves a full composite PNG of your current AR frame — camera + effects + drawing.</div>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">⏺</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Record Video</div>
+                        <div class="guide-step-desc">Tap once to start recording, tap again to stop and download as <strong>.webm</strong> video file.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section" style="margin-bottom:0;">
+            <div class="guide-section-title">Tips</div>
+            <div class="guide-steps">
+                <div class="guide-step">
+                    <div class="guide-step-num">💡</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Best Performance</div>
+                        <div class="guide-step-desc">Use in <strong>good lighting</strong>. Dark backgrounds work best — your hands pop against the neon effects.</div>
+                    </div>
+                </div>
+                <div class="guide-step">
+                    <div class="guide-step-num">🎨</div>
+                    <div class="guide-step-content">
+                        <div class="guide-step-label">Change Theme</div>
+                        <div class="guide-step-desc">Use the theme buttons at the bottom — <strong>Rainbow, Cyber, Lava, Ocean, Galaxy</strong> — to change all arc colors.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="guide-enter-btn" id="guideEnterBtn">⬡ &nbsp; Let's Begin — Grant Camera</button>
     </div>
 </div>
 
@@ -616,27 +1153,69 @@
 // ══════════════════════════════════════════
 (function buildStars() {
     const sf = document.getElementById('starField');
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 120; i++) {
         const s = document.createElement('div');
         s.className = 'star';
-        const sz = Math.random() * 2.5 + 0.5;
-        s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--del:-${Math.random()*4}s;opacity:${Math.random()*0.5}`;
+        const sz = Math.random() * 2.2 + 0.4;
+        s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${1.8+Math.random()*5}s;--del:-${Math.random()*5}s;`;
         sf.appendChild(s);
     }
 })();
 
-function showDoneBtn() {
-    setTimeout(() => {
-        document.getElementById('doneBtn').style.display = 'inline-block';
-    }, 1800);
+// Ripple effect helper
+function addRipple(btn, e) {
+    const rect = btn.getBoundingClientRect();
+    const x = (e.clientX || rect.left + rect.width/2) - rect.left;
+    const y = (e.clientY || rect.top + rect.height/2) - rect.top;
+    const size = Math.max(rect.width, rect.height) * 2;
+    const r = document.createElement('span');
+    r.className = 'ripple-el';
+    r.style.cssText = `width:${size}px;height:${size}px;left:${x - size/2}px;top:${y - size/2}px;`;
+    btn.appendChild(r);
+    setTimeout(() => r.remove(), 650);
 }
+
+document.getElementById('joinBtn').addEventListener('click', function(e) {
+    addRipple(this, e);
+    setTimeout(() => {
+        const done = document.getElementById('doneBtn');
+        done.classList.add('show');
+    }, 2200);
+});
+
+document.getElementById('doneBtn').addEventListener('click', function(e) {
+    addRipple(this, e);
+    setTimeout(dismissTg, 220);
+});
 
 function dismissTg() {
     const ov = document.getElementById('tgOverlay');
-    ov.style.transition = 'opacity 0.5s ease';
+    ov.style.transition = 'opacity 0.55s ease';
     ov.style.opacity = '0';
-    setTimeout(() => ov.remove(), 550);
+    setTimeout(() => {
+        ov.remove();
+        openGuide();
+    }, 580);
 }
+
+// ══════════════════════════════════════════
+//  GUIDE POPUP LOGIC
+// ══════════════════════════════════════════
+function openGuide() {
+    document.getElementById('guideOverlay').classList.add('show');
+}
+
+function closeGuide() {
+    const g = document.getElementById('guideOverlay');
+    g.style.transition = 'opacity 0.4s ease';
+    g.style.opacity = '0';
+    setTimeout(() => { g.remove(); }, 450);
+}
+
+document.getElementById('guideEnterBtn').addEventListener('click', function(e) {
+    addRipple(this, e);
+    setTimeout(closeGuide, 180);
+});
 
 // ══════════════════════════════════════════
 //  GLOBALS & CONFIG
