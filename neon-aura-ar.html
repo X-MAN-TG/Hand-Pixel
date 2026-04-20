@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Aura AR — CipherWrites</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg: #03040f;
+            --glass-bg: rgba(10, 14, 30, 0.55);
+            --glass-border: rgba(255,255,255,0.10);
+            --blur: blur(18px);
+            --accent: #00ffcc;
+            --accent2: #b060ff;
+            --font-main: 'Orbitron', monospace;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background: var(--bg);
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* ─────────────────── TELEGRAM POPUP ─────────────────── */
+        #tgOverlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: radial-gradient(ellipse at 50% 40%, rgba(30,15,60,0.98) 0%, rgba(3,4,15,0.99) 100%);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(30px);
+        }
+
+        .tg-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(20,12,40,0.95), rgba(8,10,25,0.95));
+            border: 1px solid rgba(176,96,255,0.35);
+            border-radius: 28px;
+            padding: 52px 48px 44px;
+            max-width: 460px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 80px rgba(176,96,255,0.2), 0 0 160px rgba(0,255,204,0.06), inset 0 1px 0 rgba(255,255,255,0.08);
+            animation: cardIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+
+        @keyframes cardIn {
+            from { opacity:0; transform: scale(0.8) translateY(40px); }
+            to   { opacity:1; transform: scale(1) translateY(0); }
+        }
+
+        .tg-logo {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #2AABEE, #229ED9);
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex; align-items:center; justify-content:center;
+            font-size: 38px;
+            box-shadow: 0 0 40px rgba(42,171,238,0.5);
+            animation: pulseLogo 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulseLogo {
+            0%,100% { box-shadow: 0 0 40px rgba(42,171,238,0.5); }
+            50%      { box-shadow: 0 0 70px rgba(42,171,238,0.85), 0 0 100px rgba(42,171,238,0.3); }
+        }
+
+        .tg-title {
+            font-family: var(--font-main);
+            font-size: 1.45rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, #b060ff, #00ffcc, #b060ff);
+            background-size: 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmerText 3s linear infinite;
+        }
+
+        @keyframes shimmerText {
+            0% { background-position: 0% }
+            100% { background-position: 200% }
+        }
+
+        .tg-sub {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.55);
+            line-height: 1.7;
+            margin-bottom: 36px;
+            letter-spacing: 0.5px;
+        }
+
+        .tg-sub span {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .tg-btn {
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 15px 36px;
+            background: linear-gradient(90deg, #2AABEE, #229ED9);
+            border: none; border-radius: 50px;
+            color: #fff;
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 30px rgba(42,171,238,0.4);
+            text-decoration: none;
+        }
+
+        .tg-btn:hover { transform: scale(1.06); box-shadow: 0 6px 40px rgba(42,171,238,0.65); }
+
+        .tg-btn-done {
+            display: none;
+            padding: 15px 36px;
+            background: linear-gradient(90deg, #00ffcc, #00cc99);
+            border: none; border-radius: 50px;
+            color: #020a10;
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 30px rgba(0,255,204,0.4);
+            margin-top: 12px;
+        }
+
+        .tg-btn-done:hover { transform: scale(1.06); box-shadow: 0 6px 40px rgba(0,255,204,0.7); }
+
+        .tg-divider {
+            width: 60px; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent2), transparent);
+            margin: 28px auto 0;
+            border-radius: 2px;
+        }
+
+        .tg-note {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.25);
+            margin-top: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Stars bg for popup */
+        .stars {
+            position: absolute; inset: 0;
+            overflow: hidden; pointer-events: none; z-index: 0;
+        }
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            animation: twinkle var(--d) ease-in-out infinite var(--del);
+        }
+        @keyframes twinkle {
+            0%,100% { opacity: 0.1; transform: scale(1); }
+            50%      { opacity: 0.8; transform: scale(1.4); }
+        }
+
+        /* ─────────────────── START OVERLAY ─────────────────── */
+        #startOverlay {
+            position: absolute; inset: 0; z-index: 500;
+            background: radial-gradient(ellipse at 50% 45%, rgba(10,5,25,0.94) 0%, rgba(3,4,15,0.97) 100%);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            backdrop-filter: blur(12px);
+            transition: opacity 0.6s ease;
+        }
+
+        .start-title {
+            font-family: var(--font-main);
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 900;
+            letter-spacing: 5px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00ffcc, #b060ff, #00ffcc);
+            background-size: 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmerText 3s linear infinite;
+        }
+
+        .start-sub {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 50px;
+        }
+
+        .start-btn {
+            padding: 16px 48px;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            background: transparent;
+            border: 1.5px solid var(--accent);
+            color: var(--accent);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: var(--accent);
+            transform: scaleX(0); transform-origin: left;
+            transition: transform 0.35s ease;
+            z-index: -1;
+            border-radius: 50px;
+        }
+
+        .start-btn:hover {
+            color: #020a10;
+            box-shadow: 0 0 40px rgba(0,255,204,0.5);
+        }
+        .start-btn:hover::before { transform: scaleX(1); }
+
+        .cam-note {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.22);
+            margin-top: 20px;
+            letter-spacing: 1px;
+        }
+
+        /* ─────────────────── VIDEO / CANVAS ─────────────────── */
+        .video-container {
+            position: absolute; inset: 0;
+            width: 100vw; height: 100vh;
+        }
+
+        .input_video {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            filter: brightness(0.55) contrast(1.05);
+            z-index: 0;
+        }
+
+        #bgCanvas, #mainCanvas, #drawCanvas {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        #bgCanvas  { z-index: 1; pointer-events: none; }
+        #drawCanvas{ z-index: 3; pointer-events: none; }
+        #mainCanvas{ z-index: 5; pointer-events: none; }
+
+        /* ─────────────────── HUD ─────────────────── */
+        #hud {
+            position: absolute; top: 20px; left: 20px;
+            z-index: 20;
+            display: flex; flex-direction: column; gap: 12px;
+            pointer-events: none;
+        }
+
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 14px 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .panel-title {
+            font-size: 0.55rem;
+            letter-spacing: 2.5px;
+            color: rgba(255,255,255,0.3);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            padding-bottom: 6px;
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 0.75rem;
+            font-family: var(--font-mono);
+            color: rgba(255,255,255,0.6);
+            min-width: 170px;
+        }
+        .stat:last-child { margin-bottom: 0; }
+        .stat .val {
+            font-weight: 700;
+            color: var(--accent);
+            font-family: var(--font-main);
+            font-size: 0.72rem;
+        }
+
+        /* ─────────────────── TOOLBAR (right) ─────────────────── */
+        #toolbar {
+            position: absolute; top: 50%; right: 20px;
+            transform: translateY(-50%);
+            z-index: 20;
+            display: flex; flex-direction: column; gap: 10px;
+            align-items: center;
+        }
+
+        .tool-btn {
+            width: 50px; height: 50px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            color: rgba(255,255,255,0.55);
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 20px rgba(0,255,204,0.3), 0 4px 16px rgba(0,0,0,0.4);
+            background: rgba(0,255,204,0.07);
+        }
+
+        .tool-btn .tip {
+            position: absolute; right: 58px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            white-space: nowrap;
+            color: rgba(255,255,255,0.7);
+            pointer-events: none;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .tool-btn:hover .tip { opacity: 1; }
+
+        /* ─────────────────── THEMES ─────────────────── */
+        #themes {
+            position: absolute; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: flex; gap: 8px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 40px;
+            padding: 7px;
+        }
+
+        .theme-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: rgba(255,255,255,0.5);
+            padding: 7px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s ease;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+
+        .theme-btn.active {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 0 15px rgba(0,255,204,0.2);
+        }
+
+        .theme-btn:hover:not(.active) {
+            color: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* ─────────────────── GESTURE TOAST ─────────────────── */
+        #gestureToast {
+            position: absolute;
+            bottom: 80px; left: 50%;
+            transform: translateX(-50%) translateY(0);
+            z-index: 30;
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            border: 1px solid rgba(0,255,204,0.3);
+            border-radius: 30px;
+            padding: 8px 22px;
+            font-family: var(--font-main);
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: var(--accent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(0,255,204,0.2);
+        }
+
+        /* ─────────────────── DRAW COLOR PICKER ─────────────────── */
+        #drawControls {
+            position: absolute; top: 20px; right: 82px;
+            z-index: 20;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        #drawControls.visible { display: flex; }
+
+        .color-swatch {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+        }
+
+        .color-swatch:hover, .color-swatch.active {
+            border-color: white;
+            transform: scale(1.2);
+            box-shadow: 0 0 15px rgba(255,255,255,0.5);
+        }
+
+        .brush-size {
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 6px 12px;
+            display: flex; gap: 6px; align-items: center;
+        }
+
+        .brush-btn {
+            background: none; border: none; color: rgba(255,255,255,0.5);
+            cursor: pointer; font-family: var(--font-mono); font-size: 0.7rem;
+            padding: 2px 6px; border-radius: 10px; transition: all 0.2s;
+        }
+        .brush-btn:hover, .brush-btn.active { color: var(--accent); background: rgba(0,255,204,0.1); }
+
+        /* ─────────────────── RECORD INDICATOR ─────────────────── */
+        #recIndicator {
+            position: absolute; top: 20px; right: 85px;
+            z-index: 20;
+            display: none;
+            align-items: center; gap: 8px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur);
+            border: 1px solid rgba(255,60,60,0.4);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: #ff4040;
+        }
+
+        #recIndicator.visible { display: flex; }
+
+        .rec-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #ff4040;
+            animation: recBlink 1s ease-in-out infinite;
+        }
+
+        @keyframes recBlink {
+            0%,100% { opacity: 1; }
+            50%      { opacity: 0.2; }
+        }
+
+        .hidden { opacity: 0 !important; pointer-events: none !important; }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ TELEGRAM POPUP ═══════════════ -->
+<div id="tgOverlay">
+    <div class="stars" id="starField"></div>
+    <div class="tg-card" style="position:relative;z-index:1;">
+        <div class="tg-logo">✈️</div>
+        <div class="tg-title">ACCESS REQUIRED</div>
+        <p class="tg-sub">
+            This experience is exclusive to<br>
+            <span>@CipherWrites</span> community members.<br><br>
+            Join the channel to unlock the full<br>
+            Neon Aura AR experience.
+        </p>
+        <a href="https://t.me/CipherWrites" target="_blank" class="tg-btn" id="joinBtn" onclick="showDoneBtn()">
+            <span>✈</span> Join CipherWrites
+        </a>
+        <br>
+        <button class="tg-btn-done" id="doneBtn" onclick="dismissTg()">
+            ✓ &nbsp;Done, I've Joined — Enter
+        </button>
+        <div class="tg-divider"></div>
+        <p class="tg-note">You'll be redirected back here after joining</p>
+    </div>
+</div>
+
+<!-- ═══════════════ START OVERLAY ═══════════════ -->
+<div id="startOverlay">
+    <div class="start-title">NEON AURA AR</div>
+    <div class="start-sub">by CipherWrites</div>
+    <button class="start-btn" id="startBtn">⬡ Initialise Experience</button>
+    <p class="cam-note">Camera + microphone access required</p>
+</div>
+
+<!-- ═══════════════ VIDEO & CANVAS LAYER ═══════════════ -->
+<div class="video-container">
+    <video class="input_video" autoplay playsinline></video>
+    <canvas id="bgCanvas"></canvas>
+    <canvas id="drawCanvas"></canvas>
+    <canvas id="mainCanvas"></canvas>
+</div>
+
+<!-- ═══════════════ HUD ═══════════════ -->
+<div id="hud" class="hidden">
+    <div class="panel">
+        <div class="panel-title">System</div>
+        <div class="stat">Hands <span class="val" id="ui-hands">0</span></div>
+        <div class="stat">FPS <span class="val" id="ui-fps">—</span></div>
+        <div class="stat">Mode <span class="val" id="ui-mode">ARC</span></div>
+    </div>
+    <div class="panel">
+        <div class="panel-title">Gesture</div>
+        <div class="stat">Type <span class="val" id="ui-gesture">—</span></div>
+        <div class="stat">Spread <span class="val" id="ui-spread">0%</span></div>
+    </div>
+</div>
+
+<!-- ═══════════════ RIGHT TOOLBAR ═══════════════ -->
+<div id="toolbar" class="hidden">
+    <button class="tool-btn active" id="btnArc" onclick="setMode('arc')">
+        ⚡<span class="tip">Arc Mode</span>
+    </button>
+    <button class="tool-btn" id="btnDraw" onclick="setMode('draw')">
+        ✏️<span class="tip">Air Draw</span>
+    </button>
+    <button class="tool-btn" id="btnClearDraw" onclick="clearDrawing()">
+        🗑️<span class="tip">Clear Drawing</span>
+    </button>
+    <button class="tool-btn" id="btnSnap" onclick="takeScreenshot()">
+        📷<span class="tip">Screenshot</span>
+    </button>
+    <button class="tool-btn" id="btnRec" onclick="toggleRecord()">
+        ⏺<span class="tip">Record Video</span>
+    </button>
+</div>
+
+<!-- Draw color palette (shows when draw mode) -->
+<div id="drawControls">
+    <div class="brush-size">
+        <button class="brush-btn active" data-size="2" onclick="setBrushSize(2,this)">S</button>
+        <button class="brush-btn" data-size="4" onclick="setBrushSize(4,this)">M</button>
+        <button class="brush-btn" data-size="7" onclick="setBrushSize(7,this)">L</button>
+    </div>
+    <div class="color-swatch active" style="background:#00ffcc" onclick="setDrawColor('#00ffcc',this)"></div>
+    <div class="color-swatch" style="background:#ff00cc" onclick="setDrawColor('#ff00cc',this)"></div>
+    <div class="color-swatch" style="background:#b060ff" onclick="setDrawColor('#b060ff',this)"></div>
+    <div class="color-swatch" style="background:#ffdd00" onclick="setDrawColor('#ffdd00',this)"></div>
+    <div class="color-swatch" style="background:#ff4040" onclick="setDrawColor('#ff4040',this)"></div>
+    <div class="color-swatch" style="background:#ffffff" onclick="setDrawColor('#ffffff',this)"></div>
+</div>
+
+<!-- Recording indicator -->
+<div id="recIndicator">
+    <div class="rec-dot"></div>
+    <span id="recTime">00:00</span>
+</div>
+
+<!-- Gesture Toast -->
+<div id="gestureToast" id="gestureToast"></div>
+
+<!-- Themes -->
+<div id="themes" class="hidden">
+    <button class="theme-btn active" data-theme="Rainbow">RAINBOW</button>
+    <button class="theme-btn" data-theme="Cyberpunk">CYBER</button>
+    <button class="theme-btn" data-theme="Lava">LAVA</button>
+    <button class="theme-btn" data-theme="Ocean">OCEAN</button>
+    <button class="theme-btn" data-theme="Galaxy">GALAXY</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  TELEGRAM POPUP LOGIC
+// ══════════════════════════════════════════
+(function buildStars() {
+    const sf = document.getElementById('starField');
+    for (let i = 0; i < 90; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const sz = Math.random() * 2.5 + 0.5;
+        s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--d:${2+Math.random()*4}s;--del:-${Math.random()*4}s;opacity:${Math.random()*0.5}`;
+        sf.appendChild(s);
+    }
+})();
+
+function showDoneBtn() {
+    setTimeout(() => {
+        document.getElementById('doneBtn').style.display = 'inline-block';
+    }, 1800);
+}
+
+function dismissTg() {
+    const ov = document.getElementById('tgOverlay');
+    ov.style.transition = 'opacity 0.5s ease';
+    ov.style.opacity = '0';
+    setTimeout(() => ov.remove(), 550);
+}
+
+// ══════════════════════════════════════════
+//  GLOBALS & CONFIG
+// ══════════════════════════════════════════
+const videoEl   = document.querySelector('.input_video');
+const bgCanvas  = document.getElementById('bgCanvas');
+const drawCvs   = document.getElementById('drawCanvas');
+const mainCvs   = document.getElementById('mainCanvas');
+const bgCtx     = bgCanvas.getContext('2d');
+const drawCtx   = drawCvs.getContext('2d');
+const ctx       = mainCvs.getContext('2d');
+
+let W = window.innerWidth, H = window.innerHeight;
+let time = 0, lastTime = performance.now();
+let fps = 0, frames = 0, lastFpsStamp = performance.now();
+
+let currentHands = [];
+let handVelocity = 0;
+let currentTheme = 'Rainbow';
+let appMode = 'arc'; // 'arc' | 'draw'
+
+// Draw state
+let drawColor = '#00ffcc';
+let brushSize = 2;
+let drawHistory = []; // paths for undo
+let currentPath = null;
+let wasDrawing = false;
+
+// Particles (only for pinch, no continuous burst)
+let particles = [];
+let ripples   = [];
+
+// Audio
+let audioCtx = null, humOsc = null, humGain = null;
+let arcSoundTimeout = null;
+
+// Recording
+let mediaRecorder = null;
+let recChunks = [];
+let recStartTime = 0;
+let recInterval = null;
+let isRecording = false;
+
+// Matrix bg
+let matrixCols = [], fontSize = 14, maxCols = 0;
+
+const FINGER_TIPS = [4, 8, 12, 16, 20];
+const HAND_CONNECTIONS_CUSTOM = window.HAND_CONNECTIONS || [];
+
+const themes = {
+    Rainbow:  (t, i, tot) => `hsl(${(t * 60 + i * (360/tot)) % 360},100%,60%)`,
+    Cyberpunk:(t, i)      => i%2===0 ? '#ff003c' : '#00f0ff',
+    Lava:     (t, i)      => `hsl(${(i*8)%40},100%,${52+Math.sin(t+i)*8}%)`,
+    Ocean:    (t, i)      => `hsl(${190+i*15},95%,58%)`,
+    Galaxy:   (t, i)      => `hsl(${265+Math.sin(t*1.5+i)*35},90%,65%)`
+};
+
+// UI refs
+const uiHands   = document.getElementById('ui-hands');
+const uiFps     = document.getElementById('ui-fps');
+const uiMode    = document.getElementById('ui-mode');
+const uiGesture = document.getElementById('ui-gesture');
+const uiSpread  = document.getElementById('ui-spread');
+const toastEl   = document.getElementById('gestureToast');
+
+// ══════════════════════════════════════════
+//  RESIZE
+// ══════════════════════════════════════════
+function resize() {
+    W = window.innerWidth; H = window.innerHeight;
+    [bgCanvas, drawCvs, mainCvs].forEach(c => { c.width = W; c.height = H; });
+    maxCols = Math.floor(W / fontSize);
+    matrixCols = Array.from({length: maxCols}, () => Math.random() * H/fontSize);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ══════════════════════════════════════════
+//  THEME SWITCHER
+// ══════════════════════════════════════════
+document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentTheme = e.target.dataset.theme;
+    });
+});
+
+// ══════════════════════════════════════════
+//  MODE & DRAW CONTROLS
+// ══════════════════════════════════════════
+function setMode(m) {
+    appMode = m;
+    document.getElementById('btnArc').classList.toggle('active', m==='arc');
+    document.getElementById('btnDraw').classList.toggle('active', m==='draw');
+    document.getElementById('drawControls').classList.toggle('visible', m==='draw');
+    uiMode.textContent = m.toUpperCase();
+    showToast(m === 'draw' ? 'AIR DRAW ON — Pinch to draw' : 'ARC MODE');
+}
+
+function setDrawColor(c, el) {
+    drawColor = c;
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+    el.classList.add('active');
+    playTone(880, 'triangle', 0.1, 0.08);
+}
+
+function setBrushSize(s, el) {
+    brushSize = s;
+    document.querySelectorAll('.brush-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function clearDrawing() {
+    drawCtx.clearRect(0, 0, W, H);
+    drawHistory = [];
+    showToast('CANVAS CLEARED');
+    playTone(200, 'sine', 0.2, 0.15);
+}
+
+// ══════════════════════════════════════════
+//  AUDIO ENGINE
+// ══════════════════════════════════════════
+function initAudio() {
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        humOsc = audioCtx.createOscillator();
+        humGain = audioCtx.createGain();
+        humOsc.type = 'sine';
+        humOsc.frequency.value = 110;
+        humGain.gain.value = 0;
+        humOsc.connect(humGain);
+        humGain.connect(audioCtx.destination);
+        humOsc.start();
+    } catch(e) { console.warn('Audio init failed', e); }
+}
+
+function playTone(freq, type='sine', vol=0.3, dur=0.12) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.5, audioCtx.currentTime + dur);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + dur + 0.02);
+}
+
+function triggerPinchSound() {
+    playTone(600, 'sawtooth', 0.35, 0.14);
+    setTimeout(() => playTone(300, 'sine', 0.15, 0.1), 80);
+}
+
+function triggerDrawStartSound() { playTone(440, 'triangle', 0.2, 0.09); }
+function triggerDrawEndSound()   { playTone(330, 'sine', 0.15, 0.12); }
+
+function updateHum(hands) {
+    if (!audioCtx || !humGain) return;
+    if (hands.length < 2) {
+        humGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+        return;
+    }
+    const p1 = hands[0][8], p2 = hands[1][8];
+    const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+    const proximity = Math.max(0, 1 - dist);
+    humOsc.frequency.setTargetAtTime(100 + proximity * 280, audioCtx.currentTime, 0.08);
+    humGain.gain.setTargetAtTime(0.04 + proximity * 0.1, audioCtx.currentTime, 0.08);
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.style.opacity = '1';
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.style.opacity = '0'; }, 1800);
+}
+
+// ══════════════════════════════════════════
+//  PHYSICS (minimal — only for pinch)
+// ══════════════════════════════════════════
+function spawnPinchParticles(pos, color) {
+    for (let i = 0; i < 14; i++) {
+        const angle = (i / 14) * Math.PI * 2;
+        const speed = 2 + Math.random() * 4;
+        particles.push({
+            x: pos.x, y: pos.y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 1.0,
+            color,
+            size: Math.random() * 3 + 1
+        });
+    }
+    ripples.push({ x: pos.x, y: pos.y, radius: 0, maxR: 140 + Math.random()*60, life: 1.0, color });
+}
+
+function updatePhysics() {
+    ctx.globalAlpha = 1;
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy;
+        p.vy += 0.08;
+        p.life -= 0.025;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life * 0.9;
+        ctx.fill();
+    }
+    for (let i = ripples.length - 1; i >= 0; i--) {
+        const r = ripples[i];
+        r.radius += (r.maxR - r.radius) * 0.12;
+        r.life -= 0.028;
+        if (r.life <= 0) { ripples.splice(i, 1); continue; }
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.radius, 0, Math.PI*2);
+        ctx.strokeStyle = r.color;
+        ctx.lineWidth = 2.5 * r.life;
+        ctx.globalAlpha = r.life * 0.8;
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+}
+
+// ══════════════════════════════════════════
+//  BACKGROUND (matrix rain — subtle, performance-safe)
+// ══════════════════════════════════════════
+let bgFrameSkip = 0;
+function drawBackground() {
+    bgFrameSkip++;
+    if (bgFrameSkip < 2) return; // only update every 2 frames
+    bgFrameSkip = 0;
+
+    bgCtx.globalCompositeOperation = 'destination-out';
+    bgCtx.fillStyle = 'rgba(0,0,0,0.18)';
+    bgCtx.fillRect(0, 0, W, H);
+    bgCtx.globalCompositeOperation = 'source-over';
+
+    bgCtx.fillStyle = themes[currentTheme](time, 1, 1);
+    bgCtx.font = fontSize + 'px monospace';
+    bgCtx.globalAlpha = 0.35;
+
+    const speed = 1 + Math.min(handVelocity * 60, 4);
+    for (let i = 0; i < matrixCols.length; i++) {
+        if (Math.random() > 0.97) {
+            const ch = String.fromCharCode(0x30A0 + Math.random() * 96);
+            bgCtx.fillText(ch, i * fontSize, matrixCols[i] * fontSize);
+        }
+        matrixCols[i] += Math.random() * speed * 0.4;
+        if (matrixCols[i] * fontSize > H && Math.random() > 0.93) matrixCols[i] = 0;
+    }
+    bgCtx.globalAlpha = 1;
+}
+
+// ══════════════════════════════════════════
+//  MATH
+// ══════════════════════════════════════════
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function toCanvas(pt) { return { x: pt.x * W, y: pt.y * H }; }
+
+// ══════════════════════════════════════════
+//  GESTURE DETECTION
+// ══════════════════════════════════════════
+let lastPinch = [false, false];
+
+function detectGestures() {
+    if (!currentHands.length) return;
+
+    currentHands.forEach((hand, idx) => {
+        const thumb = hand[4], index = hand[8];
+        const d = dist(thumb, index);
+        const pinching = d < 0.055;
+
+        if (pinching && !lastPinch[idx]) {
+            // Pinch triggered
+            const mid = toCanvas({ x:(thumb.x+index.x)/2, y:(thumb.y+index.y)/2 });
+            spawnPinchParticles(mid, themes[currentTheme](time, idx, 2));
+            triggerPinchSound();
+            showToast('PINCH ⚡');
+            uiGesture.textContent = 'PINCH';
+        }
+        lastPinch[idx] = pinching;
+    });
+
+    if (currentHands[0]) {
+        const sp = dist(currentHands[0][8], currentHands[0][20]);
+        const pct = Math.min(Math.round(sp * 300), 100);
+        uiSpread.textContent = pct + '%';
+        if (!lastPinch.includes(true)) {
+            const g = pct > 55 ? 'OPEN' : 'FIST';
+            uiGesture.textContent = g;
+        }
+    }
+}
+
+// ══════════════════════════════════════════
+//  AIR DRAW
+// ══════════════════════════════════════════
+function handleAirDraw() {
+    if (!currentHands.length) { wasDrawing = false; currentPath = null; return; }
+
+    const hand = currentHands[0];
+    const thumb = hand[4], index = hand[8];
+    const d = dist(thumb, index);
+    const isPinching = d < 0.055;
+    const tipPt = toCanvas(index);
+
+    if (isPinching) {
+        if (!wasDrawing) {
+            // Start new path
+            currentPath = { color: drawColor, size: brushSize, pts: [tipPt] };
+            triggerDrawStartSound();
+        } else if (currentPath) {
+            currentPath.pts.push(tipPt);
+            // Render stroke continuously
+            const pts = currentPath.pts;
+            if (pts.length >= 2) {
+                const prev = pts[pts.length - 2];
+                const cur  = pts[pts.length - 1];
+                drawCtx.globalCompositeOperation = 'source-over';
+                drawCtx.beginPath();
+                drawCtx.moveTo(prev.x, prev.y);
+                drawCtx.lineTo(cur.x, cur.y);
+                drawCtx.strokeStyle = currentPath.color;
+                drawCtx.lineWidth = currentPath.size * 2;
+                drawCtx.lineCap = 'round';
+                drawCtx.lineJoin = 'round';
+                drawCtx.shadowBlur = 10;
+                drawCtx.shadowColor = currentPath.color;
+                drawCtx.stroke();
+                drawCtx.shadowBlur = 0;
+            }
+        }
+        wasDrawing = true;
+    } else {
+        if (wasDrawing && currentPath) {
+            drawHistory.push(currentPath);
+            currentPath = null;
+            triggerDrawEndSound();
+        }
+        wasDrawing = false;
+    }
+
+    // Show fingertip indicator when drawing mode
+    ctx.beginPath();
+    ctx.arc(tipPt.x, tipPt.y, isPinching ? 6 : 4, 0, Math.PI*2);
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = 2;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = drawColor;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    if (isPinching) {
+        ctx.beginPath();
+        ctx.arc(tipPt.x, tipPt.y, 3, 0, Math.PI*2);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+    }
+}
+
+// ══════════════════════════════════════════
+//  ARC / LIGHTNING RENDER
+// ══════════════════════════════════════════
+function renderArcMode() {
+    currentHands.forEach((hand, hi) => {
+        const baseColor = themes[currentTheme](time, hi, 2);
+
+        // Draw skeleton connections
+        if (window.HAND_CONNECTIONS) {
+            ctx.strokeStyle = baseColor;
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.6;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = baseColor;
+            drawConnectors(ctx, hand, HAND_CONNECTIONS, { color: baseColor, lineWidth: 1.5 });
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        }
+
+        // Fingertip glow dots
+        FINGER_TIPS.forEach((ti, fi) => {
+            const pt = toCanvas(hand[ti]);
+            const c  = themes[currentTheme](time, fi, 5);
+
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 5, 0, Math.PI*2);
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = c;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        });
+    });
+
+    // Two-hand effects
+    if (currentHands.length >= 2) {
+        const h1 = currentHands[0], h2 = currentHands[1];
+
+        FINGER_TIPS.forEach((ti, fi) => {
+            const p1 = toCanvas(h1[ti]), p2 = toCanvas(h2[ti]);
+            const d  = dist(p1, p2);
+            const c  = themes[currentTheme](time, fi, 5);
+
+            // Lightning arc when close
+            if (d < 160 && Math.random() > 0.45) {
+                drawLightning(p1, p2, c);
+            }
+
+            // Gradient connecting line
+            const grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+            grad.addColorStop(0,   themes[currentTheme](time, fi, 5));
+            grad.addColorStop(0.5, themes[currentTheme](time, fi+1, 5));
+            grad.addColorStop(1,   themes[currentTheme](time, fi+2, 5));
+
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = c;
+            ctx.globalAlpha = 0.75;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1;
+        });
+
+        // Mandala — all tips connected
+        const allTips = FINGER_TIPS.map(t => toCanvas(h1[t]))
+                   .concat(FINGER_TIPS.map(t => toCanvas(h2[t])));
+        const cx = allTips.reduce((s,p) => s+p.x,0)/10;
+        const cy = allTips.reduce((s,p) => s+p.y,0)/10;
+
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(time * 0.35);
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+            const t1 = { x: allTips[i].x - cx, y: allTips[i].y - cy };
+            const t2 = { x: allTips[(i+4)%10].x - cx, y: allTips[(i+4)%10].y - cy };
+            ctx.moveTo(t1.x, t1.y);
+            ctx.lineTo(t2.x, t2.y);
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.restore();
+    }
+}
+
+function drawLightning(a, b, color) {
+    ctx.save();
+    const mid = { x:(a.x+b.x)/2 + (Math.random()-0.5)*45, y:(a.y+b.y)/2 + (Math.random()-0.5)*45 };
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(mid.x, mid.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5;
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = color;
+    ctx.globalAlpha = 0.85;
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ══════════════════════════════════════════
+//  RENDER LOOP
+// ══════════════════════════════════════════
+function renderLoop(ts) {
+    requestAnimationFrame(renderLoop);
+
+    const dt = Math.min((ts - lastTime)/1000, 0.05);
+    lastTime = ts; time += dt;
+
+    frames++;
+    if (ts > lastFpsStamp + 1000) {
+        fps = frames;
+        frames = 0;
+        lastFpsStamp = ts;
+        uiFps.textContent = fps;
+    }
+
+    drawBackground();
+
+    // Fade main canvas (motion blur for arcs — NOT hard clear)
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'screen';
+
+    updatePhysics();
+
+    if (currentHands.length > 0) {
+        if (appMode === 'arc') {
+            renderArcMode();
+            detectGestures();
+        } else {
+            handleAirDraw();
+        }
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+}
+
+// ══════════════════════════════════════════
+//  MEDIAPIPE INIT
+// ══════════════════════════════════════════
+function initMediaPipe() {
+    const hands = new Hands({ locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+    hands.setOptions({
+        maxNumHands: 2,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.72,
+        minTrackingConfidence: 0.72
+    });
+    hands.onResults(results => {
+        if (!audioCtx) return;
+        const detected = results.multiHandLandmarks || [];
+        uiHands.textContent = detected.length;
+
+        if (currentHands.length > 0 && detected.length > 0) {
+            const old = currentHands[0][8], nw = detected[0][8];
+            handVelocity = dist(old, nw);
+        } else {
+            handVelocity = 0;
+        }
+
+        currentHands = detected;
+        updateHum(currentHands);
+    });
+
+    const cam = new Camera(videoEl, {
+        onFrame: async () => { await hands.send({ image: videoEl }); },
+        width: 1280, height: 720, facingMode: 'user'
+    });
+    cam.start();
+}
+
+// ══════════════════════════════════════════
+//  SCREENSHOT
+// ══════════════════════════════════════════
+function takeScreenshot() {
+    const snap = document.createElement('canvas');
+    snap.width = W; snap.height = H;
+    const sCtx = snap.getContext('2d');
+
+    // Composite layers
+    sCtx.save();
+    sCtx.scale(-1,1); sCtx.translate(-W, 0);
+    sCtx.drawImage(videoEl, 0, 0, W, H);
+    sCtx.restore();
+
+    sCtx.save();
+    sCtx.scale(-1,1); sCtx.translate(-W, 0);
+    sCtx.drawImage(bgCanvas, 0, 0, W, H);
+    sCtx.drawImage(drawCvs,  0, 0, W, H);
+    sCtx.drawImage(mainCvs,  0, 0, W, H);
+    sCtx.restore();
+
+    const a = document.createElement('a');
+    a.href = snap.toDataURL('image/png');
+    a.download = `neon-aura-${Date.now()}.png`;
+    a.click();
+    showToast('📷 SCREENSHOT SAVED');
+    playTone(1200, 'triangle', 0.25, 0.08);
+}
+
+// ══════════════════════════════════════════
+//  SCREEN RECORDING
+// ══════════════════════════════════════════
+async function toggleRecord() {
+    if (!isRecording) {
+        try {
+            // Capture all layers via a composite stream approach
+            const compositeCanvas = document.createElement('canvas');
+            compositeCanvas.width = W; compositeCanvas.height = H;
+            const cCtx = compositeCanvas.getContext('2d');
+
+            // Draw composite every frame
+            function drawComposite() {
+                if (!isRecording) return;
+                cCtx.clearRect(0,0,W,H);
+                cCtx.save();
+                cCtx.scale(-1,1); cCtx.translate(-W,0);
+                cCtx.drawImage(videoEl, 0, 0, W, H);
+                cCtx.drawImage(bgCanvas, 0, 0, W, H);
+                cCtx.drawImage(drawCvs,  0, 0, W, H);
+                cCtx.drawImage(mainCvs,  0, 0, W, H);
+                cCtx.restore();
+                requestAnimationFrame(drawComposite);
+            }
+
+            const stream = compositeCanvas.captureStream(30);
+
+            // Try to add audio
+            if (audioCtx) {
+                const dest = audioCtx.createMediaStreamDestination();
+                if (humGain) humGain.connect(dest);
+                dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+            }
+
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+            recChunks = [];
+            mediaRecorder.ondataavailable = e => { if(e.data.size > 0) recChunks.push(e.data); };
+            mediaRecorder.onstop = saveRecording;
+            mediaRecorder.start(200);
+            isRecording = true;
+            drawComposite();
+
+            recStartTime = Date.now();
+            recInterval = setInterval(() => {
+                const s = Math.floor((Date.now()-recStartTime)/1000);
+                const m = String(Math.floor(s/60)).padStart(2,'0');
+                const sec = String(s%60).padStart(2,'0');
+                document.getElementById('recTime').textContent = `${m}:${sec}`;
+            }, 1000);
+
+            document.getElementById('recIndicator').classList.add('visible');
+            document.getElementById('btnRec').style.color = '#ff4040';
+            showToast('⏺ RECORDING…');
+        } catch(err) {
+            showToast('Recording unavailable on this browser');
+            console.error(err);
+        }
+    } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        clearInterval(recInterval);
+        document.getElementById('recIndicator').classList.remove('visible');
+        document.getElementById('btnRec').style.color = '';
+        showToast('⏹ RECORDING SAVED');
+    }
+}
+
+function saveRecording() {
+    const blob = new Blob(recChunks, { type: 'video/webm' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `neon-aura-${Date.now()}.webm`;
+    a.click();
+    playTone(440, 'triangle', 0.2, 0.2);
+}
+
+// ══════════════════════════════════════════
+//  START BUTTON
+// ══════════════════════════════════════════
+document.getElementById('startBtn').addEventListener('click', () => {
+    const ov = document.getElementById('startOverlay');
+    ov.classList.add('hidden');
+    setTimeout(() => ov.remove(), 700);
+
+    document.getElementById('hud').classList.remove('hidden');
+    document.getElementById('toolbar').classList.remove('hidden');
+    document.getElementById('themes').classList.remove('hidden');
+
+    initAudio();
+    initMediaPipe();
+    requestAnimationFrame(renderLoop);
+    showToast('NEON AURA ACTIVE');
+});
+</script>
+</body>
+</html>
